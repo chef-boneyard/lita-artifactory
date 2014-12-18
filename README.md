@@ -44,15 +44,13 @@ artifactory promote <artifact> <version> from <from-repository> to <to-repositor
 artifactory repositories # list all the artifact repositories under the base path  
 ````
 ## Local Testing With the Shell Adapter
-Install redis
-=============
+### Install redis
 ````
 `brew install redis`             # install a redis server
 `redis-server /usr/local/etc/redis.conf`  # start a non-daemonized redis server listening on port 6379
 ````
 
-Set up a skeleton lita project
-==============================
+### Set up a skeleton lita project
 Install the `lita` gem however you like to install your gems and use it to create a new project.  I create a minimal Gemfile and use bundler:
 ````
 bundle install lita   # install the lita gem
@@ -61,8 +59,7 @@ bundle exec lita new  # create a new lita project with the default shell adapter
 ````
 This will create a subdirectory called `lita` in the current directory; `lita` contains skeleton files for a `lita` project.
 
-Load the lita-artifactory gem
-==============================
+### Load the lita-artifactory gem
 Point the Gemfile in `lita` to the `lita-artifactory` plugin.
 
 ````
@@ -74,8 +71,7 @@ gem 'lita-artifactory', path: '/Users/yvonnelam/src/lita-projects/lita-artifacto
 
 Fill out `lita_config.rb` to use your `redis` installation and set the config parameters that `lita-artifactory` needs.
 
-Run the shell adapter
-=====================
+### Run the plugin using the shell adapter
 In the `lita` directory, install the necessary gems and run `lita`:
 
 ````
