@@ -22,7 +22,7 @@ module Lita
       }
 
       route /^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
-        'artifactory repositories' => 'list artifact repositories'
+        'artifactory repos' => 'list artifact repositories'
       }
 
       def promote(response)
@@ -74,7 +74,7 @@ module Lita
 
       def repo_name(repo)
         tmp = repo
-        tmp = 'omnibus-current-local' if tmp.eql?('local')
+        tmp = 'omnibus-current-local' if tmp.eql?('current')
         tmp = 'omnibus-stable-local' if tmp.eql?('stable')
         tmp
       end
