@@ -74,7 +74,7 @@ module Lita
 
       def repo_name(repo)
         tmp = repo
-        tmp = 'omnibus-current-local' if tmp.eql?('local')
+        tmp = 'omnibus-current-local' if tmp.eql?('current')
         tmp = 'omnibus-stable-local' if tmp.eql?('stable')
         tmp
       end

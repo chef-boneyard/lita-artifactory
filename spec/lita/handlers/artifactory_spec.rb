@@ -14,7 +14,7 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
     end
 
     it 'does a dry run' do
-      send_command('artifactory promote angrychef 12.0.0 from local to stable')
+      send_command('artifactory promote angrychef 12.0.0 from current to stable')
       expect(replies.last).to eq('Copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully')
     end
   end
