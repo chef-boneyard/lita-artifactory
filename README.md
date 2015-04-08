@@ -30,7 +30,7 @@ config.handlers.artifactory.base_path
 config.handlers.artifactory.ssl_pem_file
 config.handlers.artifactory.ssl_verify
 
-# Proxy (default to nil) 
+# Proxy (default to nil)
 config.handlers.artifactory.proxy_username
 config.handlers.artifactory.proxy_password
 config.handlers.artifactory.proxy_address
@@ -83,7 +83,7 @@ sealam01:lita yvonnelam$ bundle exec lita
 fatal: Not a git repository (or any of the parent directories): .git
 [2014-12-16 00:07:56 UTC] WARN: Struct-style access of config.redis is deprecated and will be removed in Lita 5.0. config.redis is now a hash.
 Type "exit" or "quit" to end the session.
-Lita > 
+Lita >
 ````
 
 To talk to the shell adapter, type
