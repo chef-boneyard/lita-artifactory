@@ -22,7 +22,7 @@ module Lita
       }
 
       route /^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
-        'artifactory repositories' => 'list artifact repositories'
+        'artifactory repos' => 'list artifact repositories'
       }
 
       def promote(response)

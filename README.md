@@ -41,7 +41,7 @@ config.handlers.artifactory.proxy_port
 ````
 artifactory promote <artifact> <version> from <from-repository> to <to-repository>  # accepts 'local' for <from-repository> and 'stable' for <to-repository>
 
-artifactory repositories # list all the artifact repositories under the base path  
+artifactory repos # list all the artifact repositories under the base path
 ````
 ## Local Testing With the Shell Adapter
 ### Install redis
@@ -92,7 +92,7 @@ To talk to the shell adapter, type
 
 e.g.
 ````
-Lita > @lita artifactory repositoreis
+Lita > @lita artifactory repos
 Artifact repositories:  omnibus-current-local, omnibus-stable-local, libs-release-local, libs-snapshot-local, repo
 Lita > @lita artifact promote angrychef 12.0.0-alpha.1+20140830080511.git.87.d404a1a from local to stable
 Copying omnibus-current-local:com/getchef/angrychef/12.0.0-alpha.1+20140830080511.git.87.d404a1a to omnibus-stable-local:com/getchef/angrychef/12.0.0-alpha.1 20140830080511.git.87.d404a1a completed successfully
