@@ -1,4 +1,6 @@
 # lita-artifactory
+[![Build Status](https://travis-ci.org/chef/lita-artifactory.svg)](https://travis-ci.org/chef/lita-artifactory)
+
 lita plugin for artifactory.  Specific to Chef Software, Inc.'s omnibus repositories.
 
 ## Installation
