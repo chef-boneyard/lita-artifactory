@@ -17,13 +17,13 @@ module Lita
       FROM_REPO = /[\w\-]+/
       TO_REPO = /[\w\-]+/
 
-      route /^artifact(?:ory)?\s+promote\s+#{ARTIFACT.source}\s+#{VERSION.source}\s+from\s+#{FROM_REPO.source}\s+to\s+#{TO_REPO.source}/i, :promote, command: true, help: {
-        'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>'
-      }
+      route(/^artifact(?:ory)?\s+promote\s+#{ARTIFACT.source}\s+#{VERSION.source}\s+from\s+#{FROM_REPO.source}\s+to\s+#{TO_REPO.source}/i, :promote, command: true, help: {
+              'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>',
+            })
 
-      route /^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
-        'artifactory repos' => 'list artifact repositories'
-      }
+      route(/^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
+              'artifactory repos' => 'list artifact repositories',
+            })
 
       def promote(response)
         from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
@@ -32,7 +32,7 @@ module Lita
         # Dry run first.
         dry = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=1")
 
-        if dry.include?('successfully') then
+        if dry.include?('successfully')
           real = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=0")
           response.reply real
         else
@@ -41,8 +41,7 @@ module Lita
       end
 
       def repos(response)
-        array = all_repos.collect { |repo| repo.key }
-        response.reply "Artifact repositories:  #{array.join(', ')}"
+        response.reply "Artifact repositories:  #{all_repos.collect(&:key).sort.join(', ')}"
       end
 
       private
@@ -65,8 +64,10 @@ module Lita
         ::Artifactory::Resource::Repository.all(client: client)
       end
 
-      # Using a raw request because the artifactory-client does not directly support copying a folder.
-      # @TODO:  investigate raw requests further.  Params not working the way I (naively) thought they would.
+      # Using a raw request because the artifactory-client does not directly
+      # support copying a folder.
+      # @TODO:  investigate raw requests further.  Params not working the way
+      # I (naively) thought they would.
       def copy_folder(uri)
         cmd = client.post(uri, fake: 'stuff')
         cmd['messages'][0]['message']
