@@ -27,5 +27,7 @@ SignalException:
   Enabled: false
 SingleSpaceBeforeFirstArg:
   Enabled: false
+Style/FileName:
+  Enabled: false
 TrailingComma:
   EnforcedStyleForMultiline: comma
