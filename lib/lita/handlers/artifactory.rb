@@ -26,19 +26,22 @@ module Lita
             })
 
       def promote(response)
-        project = response.args[1]
-        version = response.args[2]
-        from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{project}/#{version}"
-        to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{project}/#{version}"
+        project       = response.args[1]
+        version       = response.args[2]
+        artifact_path = File.join(config.base_path, project, version)
+        repo_from     = repo_name(response.args[4])
+        repo_to       = repo_name(response.args[6])
+        artifact_from = File.join(repo_from, artifact_path)
+        artifact_to   = File.join(repo_to, artifact_path)
 
         # Dry run first.
-        artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=1")
+        artifactory_response = move_folder("/api/move/#{artifact_from}?to=#{artifact_to}&dry=1")
 
         if artifactory_response.include?('successfully')
-          artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=0")
+          artifactory_response = move_folder("/api/move/#{artifact_from}?to=#{artifact_to}&dry=0")
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            #{project} #{version} has been promoted successfully! You can view the promoted artifacts at:
-            #{config.endpoint}/webapp/browserepo.html?pathId=#{to_artifact}
+            #{project} #{version} has been successfully promoted to #{repo_to}! You can view the promoted artifacts at:
+            #{config.endpoint}/webapp/browserepo.html?pathId=#{repo_to}:#{artifact_path}
 
             Full response message from #{config.endpoint}:
           EOH
@@ -46,7 +49,7 @@ module Lita
           sleep 1
           response.reply "/quote #{artifactory_response}"
         else
-          response.reply "There was an error promoting #{project} #{version}. Full error message from #{config.endpoint}:"
+          response.reply "There was an error promoting #{project} #{version} to #{repo_to}. Full error message from #{config.endpoint}:"
           sleep 1
           response.reply "/quote #{artifactory_response}"
         end
