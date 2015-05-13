@@ -30,10 +30,10 @@ module Lita
         to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
 
         # Dry run first.
-        dry = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=1")
+        dry = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=1")
 
         if dry.include?('successfully')
-          real = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=0")
+          real = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=0")
           response.reply real
         else
           response.reply "ERROR: #{dry}"
@@ -65,10 +65,10 @@ module Lita
       end
 
       # Using a raw request because the artifactory-client does not directly
-      # support copying a folder.
+      # support moving a folder.
       # @TODO:  investigate raw requests further.  Params not working the way
       # I (naively) thought they would.
-      def copy_folder(uri)
+      def move_folder(uri)
         cmd = client.post(uri, fake: 'stuff')
         cmd['messages'][0]['message']
       end

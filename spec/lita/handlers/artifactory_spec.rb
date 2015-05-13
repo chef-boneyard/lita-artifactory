@@ -9,13 +9,13 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
 
     before do
       allow(subject).to receive(:client).and_return(client)
-      allow(client).to receive(:post).with('/api/copy/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=1', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Dry Run for copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
-      allow(client).to receive(:post).with('/api/copy/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=0', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
+      allow(client).to receive(:post).with('/api/move/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=1', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Dry Run for copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
+      allow(client).to receive(:post).with('/api/move/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=0', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
     end
 
     it 'does a dry run' do
       send_command('artifactory promote angrychef 12.0.0 from current to stable')
-      expect(replies.last).to eq('Copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully')
+      expect(replies.last).to eq('Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully')
     end
   end
 
