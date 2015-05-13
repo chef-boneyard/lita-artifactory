@@ -26,17 +26,29 @@ module Lita
             })
 
       def promote(response)
-        from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
-        to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
+        project = response.args[1]
+        version = response.args[2]
+        from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{project}/#{version}"
+        to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{project}/#{version}"
 
         # Dry run first.
-        dry = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=1")
+        artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=1")
 
-        if dry.include?('successfully')
-          real = copy_folder("/api/copy/#{from_artifact}?to=#{to_artifact}&dry=0")
-          response.reply real
+        if artifactory_response.include?('successfully')
+          artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=0")
+          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+            #{project} #{version} has been promoted successfully! You can view the promoted artifacts at:
+            #{config.endpoint}/webapp/browserepo.html?pathId=#{to_artifact}
+
+            Full response message from #{config.endpoint}:
+          EOH
+          response.reply reply_msg
+          sleep 1
+          response.reply "/quote #{artifactory_response}"
         else
-          response.reply "ERROR: #{dry}"
+          response.reply "There was an error promoting #{project} #{version}. Full error message from #{config.endpoint}:"
+          sleep 1
+          response.reply "/quote #{artifactory_response}"
         end
       end
 
@@ -65,10 +77,10 @@ module Lita
       end
 
       # Using a raw request because the artifactory-client does not directly
-      # support copying a folder.
+      # support moving a folder.
       # @TODO:  investigate raw requests further.  Params not working the way
       # I (naively) thought they would.
-      def copy_folder(uri)
+      def move_folder(uri)
         cmd = client.post(uri, fake: 'stuff')
         cmd['messages'][0]['message']
       end
