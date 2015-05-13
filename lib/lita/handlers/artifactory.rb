@@ -26,17 +26,29 @@ module Lita
             })
 
       def promote(response)
-        from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
-        to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{response.args[1]}/#{response.args[2]}"
+        project = response.args[1]
+        version = response.args[2]
+        from_artifact = "#{repo_name(response.args[4])}/#{config.base_path}/#{project}/#{version}"
+        to_artifact = "#{repo_name(response.args[6])}/#{config.base_path}/#{project}/#{version}"
 
         # Dry run first.
-        dry = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=1")
+        artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=1")
 
-        if dry.include?('successfully')
-          real = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=0")
-          response.reply real
+        if artifactory_response.include?('successfully')
+          artifactory_response = move_folder("/api/move/#{from_artifact}?to=#{to_artifact}&dry=0")
+          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+            #{project} #{version} has been promoted successfully! You can view the promoted artifacts at:
+            #{config.endpoint}/webapp/browserepo.html?pathId=#{to_artifact}
+
+            Full response message from #{config.endpoint}:
+          EOH
+          response.reply reply_msg
+          sleep 1
+          response.reply "/quote #{artifactory_response}"
         else
-          response.reply "ERROR: #{dry}"
+          response.reply "There was an error promoting #{project} #{version}. Full error message from #{config.endpoint}:"
+          sleep 1
+          response.reply "/quote #{artifactory_response}"
         end
       end
 
