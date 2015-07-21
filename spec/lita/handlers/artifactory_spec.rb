@@ -21,14 +21,14 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
       send_command('artifactory promote angrychef 12.0.0 from current to stable')
 
       success_response = <<-EOH
-angrychef 12.0.0 has been successfully promoted to omnibus-stable-local! You can view the promoted artifacts at:
+*angrychef* *12.0.0* has been successfully promoted to *omnibus-stable-local*! You can view the promoted artifacts at:
 http://artifactory.chef.co/webapp/browserepo.html?pathId=omnibus-stable-local:com/getchef/angrychef/12.0.0
 
 Full response message from http://artifactory.chef.co:
+
+```Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully```
       EOH
       expect(replies.first).to eq(success_response)
-
-      expect(replies.last).to eq('/quote Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully')
     end
   end
 

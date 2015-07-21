@@ -40,18 +40,23 @@ module Lita
         if artifactory_response.include?('successfully')
           artifactory_response = move_folder("/api/move/#{artifact_from}?to=#{artifact_to}&dry=0")
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            #{project} #{version} has been successfully promoted to #{repo_to}! You can view the promoted artifacts at:
+            *#{project}* *#{version}* has been successfully promoted to *#{repo_to}*! You can view the promoted artifacts at:
             #{config.endpoint}/webapp/browserepo.html?pathId=#{repo_to}:#{artifact_path}
 
             Full response message from #{config.endpoint}:
+
+            ```#{artifactory_response}```
           EOH
           response.reply reply_msg
-          sleep 1
-          response.reply "/quote #{artifactory_response}"
         else
-          response.reply "There was an error promoting #{project} #{version} to #{repo_to}. Full error message from #{config.endpoint}:"
-          sleep 1
-          response.reply "/quote #{artifactory_response}"
+          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+            There was an error promoting *#{project}* *#{version}* to *#{repo_to}*.
+
+            Full error message from #{config.endpoint}:
+
+            ```#{artifactory_response}```
+          EOH
+          response.reply reply_msg
         end
       end
 
