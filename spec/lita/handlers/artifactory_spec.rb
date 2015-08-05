@@ -13,22 +13,40 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
 
     before do
       allow(subject).to receive(:client).and_return(client)
-      allow(client).to receive(:post).with('/api/move/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=1', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Dry Run for copying omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
-      allow(client).to receive(:post).with('/api/move/omnibus-current-local/com/getchef/angrychef/12.0.0?to=omnibus-stable-local/com/getchef/angrychef/12.0.0&dry=0', fake: 'stuff').and_return('messages' => [{ 'level' => 'INFO', 'message' => 'Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully' }])
+      allow(client).to receive(:get).with('/api/build/angrychef/12.0.0').and_return('uri' => 'http://artifactory.chef.co/api/build/angrychef/12.0.0', 'buildInfo' => { 'name' => 'angrychef', 'number' => '12.0.0' })
+      allow(client).to receive(:post).with('/api/build/promote/angrychef/12.0.0', any_args).and_return('messages' => [])
     end
 
     it 'promotes an artifact' do
       send_command('artifactory promote angrychef 12.0.0 from current to stable')
 
       success_response = <<-EOH
-*angrychef* *12.0.0* has been successfully promoted to *omnibus-stable-local*! You can view the promoted artifacts at:
+:metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to *omnibus-stable-local*!
+
+You can view the promoted artifacts at:
 http://artifactory.chef.co/webapp/browserepo.html?pathId=omnibus-stable-local:com/getchef/angrychef/12.0.0
-
-Full response message from http://artifactory.chef.co:
-
-```Moving omnibus-current-local:com/getchef/angrychef/12.0.0 to omnibus-stable-local:com/getchef/angrychef/12.0.0 completed successfully```
       EOH
       expect(replies.first).to eq(success_response)
+    end
+
+    context 'the promotion fails' do
+      before do
+        allow(client).to receive(:post).with('/api/build/promote/angrychef/12.0.0', any_args).and_return('messages' => [{ 'level' => 'error', 'message' => 'Some error message.' }, { 'level' => 'error', 'message' => 'Some other error message.' }])
+      end
+
+      it 'prints a failure message' do
+        send_command('artifactory promote angrychef 12.0.0 from current to stable')
+
+        success_response = <<-EOH
+:scream: :skull: There was an error promoting *angrychef* *12.0.0* to *omnibus-stable-local*!
+
+Full error message from http://artifactory.chef.co:
+
+```Some error message.
+Some other error message.```
+        EOH
+        expect(replies.first).to eq(success_response)
+      end
     end
   end
 
@@ -44,7 +62,7 @@ Full response message from http://artifactory.chef.co:
 
     it 'returns a comma-separeted list of repo names' do
       send_command('artifactory repositories')
-      expect(replies.last).to eq('Artifact repositories:  repo1, repo2')
+      expect(replies.last).to eq('Artifact repositories: repo1, repo2')
     end
   end
 end
