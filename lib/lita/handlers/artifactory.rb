@@ -12,12 +12,11 @@ module Lita
       config :proxy_address, default: nil
       config :proxy_port, default: nil
 
-      ARTIFACT = /[\w\-\.\+\_]+/
-      VERSION = /[\w\-\.\+\_]+/
-      FROM_REPO = /[\w\-]+/
-      TO_REPO = /[\w\-]+/
+      PROJECT_REGEX = /[\w\-\.\+\_]+/
+      VERSION_REGEX = /[\w\-\.\+\_]+/
+      STABLE_REPO   = 'omnibus-stable-local'
 
-      route(/^artifact(?:ory)?\s+promote\s+#{ARTIFACT.source}\s+#{VERSION.source}\s+from\s+#{FROM_REPO.source}\s+to\s+#{TO_REPO.source}/i, :promote, command: true, help: {
+      route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
               'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>',
             })
 
@@ -29,39 +28,55 @@ module Lita
         project       = response.args[1]
         version       = response.args[2]
         artifact_path = File.join(config.base_path, project, version)
-        repo_from     = repo_name(response.args[4])
-        repo_to       = repo_name(response.args[6])
-        artifact_from = File.join(repo_from, artifact_path)
-        artifact_to   = File.join(repo_to, artifact_path)
+        user          = response.user
 
-        # Dry run first.
-        artifactory_response = move_folder("/api/move/#{artifact_from}?to=#{artifact_to}&dry=1")
+        promotion_options = {
+          status:  'STABLE',
+          comment: 'Promoted using the lita-artifactory plugin. ChatOps FTW!',
+          user: "#{user.name} (ID: #{user.id}, Mention name: #{user.mention_name})",
+        }
 
-        if artifactory_response.include?('successfully')
-          artifactory_response = move_folder("/api/move/#{artifact_from}?to=#{artifact_to}&dry=0")
+        # attempt to locate the build
+        build = ::Artifactory::Resource::Build.find(project, version, client: client)
+
+        if build.nil?
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            *#{project}* *#{version}* has been successfully promoted to *#{repo_to}*! You can view the promoted artifacts at:
-            #{config.endpoint}/webapp/browserepo.html?pathId=#{repo_to}:#{artifact_path}
+            :hankey: I couldn't locate a build for *#{project}* *#{version}*.
 
-            Full response message from #{config.endpoint}:
+            Please verify *#{project}* is a valid project name and *#{version}* is a valid version number.
+          EOH
+          response.reply reply_msg
 
-            ```#{artifactory_response}```
+          return
+        end
+
+        # attempt a dry run promotion first
+        artifactory_response = build.promote(STABLE_REPO, promotion_options.merge(dry_run: true))
+
+        if artifactory_response['messages'].empty?
+          build.promote(STABLE_REPO, promotion_options)
+
+          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+            :metal: :ice_cream: *#{project}* *#{version}* has been successfully promoted to *#{STABLE_REPO}*!
+
+            You can view the promoted artifacts at:
+            #{config.endpoint}/webapp/browserepo.html?pathId=#{STABLE_REPO}:#{artifact_path}
           EOH
           response.reply reply_msg
         else
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            There was an error promoting *#{project}* *#{version}* to *#{repo_to}*.
+            :scream: :skull: There was an error promoting *#{project}* *#{version}* to *#{STABLE_REPO}*!
 
             Full error message from #{config.endpoint}:
 
-            ```#{artifactory_response}```
+            ```#{artifactory_response['messages'].map { |m| m['message'] }.join("\n")}```
           EOH
           response.reply reply_msg
         end
       end
 
       def repos(response)
-        response.reply "Artifact repositories:  #{all_repos.collect(&:key).sort.join(', ')}"
+        response.reply "Artifact repositories: #{all_repos.collect(&:key).sort.join(', ')}"
       end
 
       private
@@ -82,22 +97,6 @@ module Lita
 
       def all_repos
         ::Artifactory::Resource::Repository.all(client: client)
-      end
-
-      # Using a raw request because the artifactory-client does not directly
-      # support moving a folder.
-      # @TODO:  investigate raw requests further.  Params not working the way
-      # I (naively) thought they would.
-      def move_folder(uri)
-        cmd = client.post(uri, fake: 'stuff')
-        cmd['messages'][0]['message']
-      end
-
-      def repo_name(repo)
-        tmp = repo
-        tmp = 'omnibus-current-local' if tmp.eql?('current')
-        tmp = 'omnibus-stable-local' if tmp.eql?('stable')
-        tmp
       end
     end
 
