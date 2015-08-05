@@ -41,7 +41,7 @@ config.handlers.artifactory.proxy_port
 ## Usage
 
 ````
-artifactory promote <artifact> <version> from <from-repository> to <to-repository>  # accepts 'local' for <from-repository> and 'stable' for <to-repository>
+artifactory promote <artifact> <version>
 
 artifactory repos # list all the artifact repositories under the base path
 ````
