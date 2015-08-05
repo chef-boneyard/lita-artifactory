@@ -48,6 +48,23 @@ Some other error message.```
         expect(replies.first).to eq(success_response)
       end
     end
+
+    context 'the user provides an invalid project or version' do
+      before do
+        allow(client).to receive(:get).with('/api/build/poop/33').and_raise(Artifactory::Error::HTTPError.new('status' => 404, 'message' => 'No build was found for build name: poop, build number: 33'))
+      end
+
+      it 'prints a nice message' do
+        send_command('artifactory promote poop 33')
+
+        success_response = <<-EOH
+:hankey: I couldn't locate a build for *poop* *33*.
+
+Please verify *poop* is a valid project name and *33* is a valid version number.
+        EOH
+        expect(replies.first).to eq(success_response)
+      end
+    end
   end
 
   describe '#artifactory repositories' do

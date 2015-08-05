@@ -39,6 +39,17 @@ module Lita
         # attempt to locate the build
         build = ::Artifactory::Resource::Build.find(project, version, client: client)
 
+        if build.nil?
+          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+            :hankey: I couldn't locate a build for *#{project}* *#{version}*.
+
+            Please verify *#{project}* is a valid project name and *#{version}* is a valid version number.
+          EOH
+          response.reply reply_msg
+
+          return
+        end
+
         # attempt a dry run promotion first
         artifactory_response = build.promote(STABLE_REPO, promotion_options.merge(dry_run: true))
 
