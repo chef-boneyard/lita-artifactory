@@ -12,13 +12,11 @@ module Lita
       config :proxy_address, default: nil
       config :proxy_port, default: nil
 
-      ARTIFACT = /[\w\-\.\+\_]+/
-      VERSION = /[\w\-\.\+\_]+/
-      FROM_REPO = /[\w\-]+/
-      TO_REPO = /[\w\-]+/
-      STABLE_REPO  = 'omnibus-stable-local'
+      PROJECT_REGEX = /[\w\-\.\+\_]+/
+      VERSION_REGEX = /[\w\-\.\+\_]+/
+      STABLE_REPO   = 'omnibus-stable-local'
 
-      route(/^artifact(?:ory)?\s+promote\s+#{ARTIFACT.source}\s+#{VERSION.source}\s+from\s+#{FROM_REPO.source}\s+to\s+#{TO_REPO.source}/i, :promote, command: true, help: {
+      route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
               'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>',
             })
 

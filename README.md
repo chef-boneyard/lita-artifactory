@@ -96,7 +96,7 @@ e.g.
 ````
 Lita > @lita artifactory repos
 Artifact repositories:  omnibus-current-local, omnibus-stable-local, libs-release-local, libs-snapshot-local, repo
-Lita > @lita artifact promote angrychef 12.0.0-alpha.1+20140830080511.git.87.d404a1a from local to stable
+Lita > @lita artifact promote angrychef 12.0.0-alpha.1+20140830080511.git.87.d404a1a
 Moving omnibus-current-local:com/getchef/angrychef/12.0.0-alpha.1+20140830080511.git.87.d404a1a to omnibus-stable-local:com/getchef/angrychef/12.0.0-alpha.1 20140830080511.git.87.d404a1a completed successfully
 ````
 

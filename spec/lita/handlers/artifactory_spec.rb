@@ -18,7 +18,7 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
     end
 
     it 'promotes an artifact' do
-      send_command('artifactory promote angrychef 12.0.0 from current to stable')
+      send_command('artifactory promote angrychef 12.0.0')
 
       success_response = <<-EOH
 :metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to *omnibus-stable-local*!
@@ -35,7 +35,7 @@ http://artifactory.chef.co/webapp/browserepo.html?pathId=omnibus-stable-local:co
       end
 
       it 'prints a failure message' do
-        send_command('artifactory promote angrychef 12.0.0 from current to stable')
+        send_command('artifactory promote angrychef 12.0.0')
 
         success_response = <<-EOH
 :scream: :skull: There was an error promoting *angrychef* *12.0.0* to *omnibus-stable-local*!
