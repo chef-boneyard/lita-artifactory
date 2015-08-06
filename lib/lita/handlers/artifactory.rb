@@ -33,7 +33,8 @@ module Lita
         promotion_options = {
           status:  'STABLE',
           comment: 'Promoted using the lita-artifactory plugin. ChatOps FTW!',
-          user: "#{user.name} (ID: #{user.id}, Mention name: #{user.mention_name})",
+          # user is limited to 64 characters
+          user: "#{user.name} (#{user.id} / #{user.mention_name})"[0..63],
         }
 
         # attempt to locate the build

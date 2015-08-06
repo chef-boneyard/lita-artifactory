@@ -65,6 +65,20 @@ Please verify *poop* is a valid project name and *33* is a valid version number.
         expect(replies.first).to eq(success_response)
       end
     end
+
+    context 'the promoting user data is over 66 characters long' do
+      let(:user)  { Lita::User.create('Uxxxxxxxx', name: 'Some User With A Really Long Name', mention_name: 'someuserwithareallylongname') }
+      let(:build) { double('Artifactory::Resource::Build') }
+
+      before do
+        allow(Artifactory::Resource::Build).to receive(:find).and_return(build)
+      end
+
+      it 'truncates the user data to 66 characters' do
+        expect(build).to receive(:promote).with(described_class::STABLE_REPO, hash_including(user: 'Some User With A Really Long Name (Uxxxxxxxx / someuserwithareal')).exactly(2).times.and_return('messages' => [])
+        send_command('artifactory promote angrychef 12.0.0')
+      end
+    end
   end
 
   describe '#artifactory repositories' do
