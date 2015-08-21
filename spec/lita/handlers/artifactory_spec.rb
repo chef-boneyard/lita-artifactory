@@ -14,14 +14,14 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
     before do
       allow(subject).to receive(:client).and_return(client)
       allow(client).to receive(:get).with('/api/build/angrychef/12.0.0').and_return('uri' => 'http://artifactory.chef.co/api/build/angrychef/12.0.0', 'buildInfo' => { 'name' => 'angrychef', 'number' => '12.0.0' })
-      allow(client).to receive(:post).with('/api/build/promote/angrychef/12.0.0', any_args).and_return('messages' => [])
+      allow(client).to receive(:post).with('/api/plugins/build/promote/stable/angrychef/12.0.0?params=comment=Promoted%20using%20the%20lita-artifactory%20plugin.%20ChatOps%20FTW!%7Cuser=Test%20User%20(1%20/%20Test%20User)', any_args).and_return('messages' => [])
     end
 
     it 'promotes an artifact' do
       send_command('artifactory promote angrychef 12.0.0')
 
       success_response = <<-EOH
-:metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to *omnibus-stable-local*!
+:metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to the *stable* channel!
 
 You can view the promoted artifacts at:
 http://artifactory.chef.co/webapp/browserepo.html?pathId=omnibus-stable-local:com/getchef/angrychef/12.0.0
@@ -30,22 +30,23 @@ http://artifactory.chef.co/webapp/browserepo.html?pathId=omnibus-stable-local:co
     end
 
     context 'the promotion fails' do
+      let(:error_message) { 'Build angrychef/12.0.0 was not found, canceling promotion' }
+
       before do
-        allow(client).to receive(:post).with('/api/build/promote/angrychef/12.0.0', any_args).and_return('messages' => [{ 'level' => 'error', 'message' => 'Some error message.' }, { 'level' => 'error', 'message' => 'Some other error message.' }])
+        expect(client).to receive(:post).with(any_args).and_raise(::Artifactory::Error::HTTPError.new('status' => 500, 'message' => error_message))
       end
 
       it 'prints a failure message' do
         send_command('artifactory promote angrychef 12.0.0')
 
-        success_response = <<-EOH
-:scream: :skull: There was an error promoting *angrychef* *12.0.0* to *omnibus-stable-local*!
+        error_response = <<-EOH
+:scream: :skull: There was an error promoting *angrychef* *12.0.0* to the *stable* channel!
 
 Full error message from http://artifactory.chef.co:
 
-```Some error message.
-Some other error message.```
+```The Artifactory server responded with an HTTP Error 500: `#{error_message}'```
         EOH
-        expect(replies.first).to eq(success_response)
+        expect(replies.first).to eq(error_response)
       end
     end
 
@@ -68,14 +69,10 @@ Please verify *poop* is a valid project name and *33* is a valid version number.
 
     context 'the promoting user data is over 66 characters long' do
       let(:user)  { Lita::User.create('Uxxxxxxxx', name: 'Some User With A Really Long Name', mention_name: 'someuserwithareallylongname') }
-      let(:build) { double('Artifactory::Resource::Build') }
-
-      before do
-        allow(Artifactory::Resource::Build).to receive(:find).and_return(build)
-      end
 
       it 'truncates the user data to 66 characters' do
-        expect(build).to receive(:promote).with(described_class::STABLE_REPO, hash_including(user: 'Some User With A Really Long Name (Uxxxxxxxx / someuserwithareal')).exactly(2).times.and_return('messages' => [])
+        expect(client).to receive(:post).with(%r{(.*)?user=Some%20User%20With%20A%20Really%20Long%20Name%20\(Uxxxxxxxx%20\/%20someuserwithareal(.*)?}, any_args)
+
         send_command('artifactory promote angrychef 12.0.0')
       end
     end
