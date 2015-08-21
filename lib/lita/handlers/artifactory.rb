@@ -12,9 +12,9 @@ module Lita
       config :proxy_address, default: nil
       config :proxy_port, default: nil
 
-      PROJECT_REGEX = /[\w\-\.\+\_]+/
-      VERSION_REGEX = /[\w\-\.\+\_]+/
-      STABLE_REPO   = 'omnibus-stable-local'
+      PROJECT_REGEX     = /[\w\-\.\+\_]+/
+      VERSION_REGEX     = /[\w\-\.\+\_]+/
+      PROMOTION_CHANNEL = 'stable'
 
       route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
               'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>',
@@ -31,7 +31,6 @@ module Lita
         user          = response.user
 
         promotion_options = {
-          status:  'STABLE',
           comment: 'Promoted using the lita-artifactory plugin. ChatOps FTW!',
           # user is limited to 64 characters
           user: "#{user.name} (#{user.id} / #{user.mention_name})"[0..63],
@@ -51,29 +50,34 @@ module Lita
           return
         end
 
-        # attempt a dry run promotion first
-        artifactory_response = build.promote(STABLE_REPO, promotion_options.merge(dry_run: true))
+        # Artifactory expects parameters in the form:
+        #
+        #   params=<PARAM1_NAME>=<PARAM1_VALUE>|<PARAM2_NAME>=<PARAM2_VALUE>
+        #
+        params = promotion_options.map { |k, v| "#{k}=#{v}" }.join('|')
+        path   = ['/api/plugins/build/promote', PROMOTION_CHANNEL, build.name, build.number].join('/')
+        path   = [path, "params=#{params}"].compact.join('?')
 
-        if artifactory_response['messages'].empty?
-          build.promote(STABLE_REPO, promotion_options)
+        begin
+          client.post(URI.encode(path), nil)
 
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            :metal: :ice_cream: *#{project}* *#{version}* has been successfully promoted to *#{STABLE_REPO}*!
+            :metal: :ice_cream: *#{project}* *#{version}* has been successfully promoted to the *#{PROMOTION_CHANNEL}* channel!
 
             You can view the promoted artifacts at:
-            #{config.endpoint}/webapp/browserepo.html?pathId=#{STABLE_REPO}:#{artifact_path}
+            #{config.endpoint}/webapp/browserepo.html?pathId=omnibus-#{PROMOTION_CHANNEL}-local:#{artifact_path}
           EOH
-          response.reply reply_msg
-        else
+        rescue ::Artifactory::Error::HTTPError => e
           reply_msg = <<-EOH.gsub(/^ {12}/, '')
-            :scream: :skull: There was an error promoting *#{project}* *#{version}* to *#{STABLE_REPO}*!
+            :scream: :skull: There was an error promoting *#{project}* *#{version}* to the *#{PROMOTION_CHANNEL}* channel!
 
             Full error message from #{config.endpoint}:
 
-            ```#{artifactory_response['messages'].map { |m| m['message'] }.join("\n")}```
+            ```#{e.message}```
           EOH
-          response.reply reply_msg
         end
+
+        response.reply reply_msg
       end
 
       def repos(response)
