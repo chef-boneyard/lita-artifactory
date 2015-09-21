@@ -17,7 +17,7 @@ module Lita
       PROMOTION_CHANNEL = 'stable'
 
       route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
-              'artifactory promote' => 'promote <artifact> <version> from <from-repo> to <to-repo>',
+              'artifactory promote' => 'promote <artifact> <version>',
             })
 
       route(/^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
