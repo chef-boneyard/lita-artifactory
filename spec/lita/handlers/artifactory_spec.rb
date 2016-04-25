@@ -13,7 +13,41 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
 
     before do
       allow(subject).to receive(:client).and_return(client)
-      allow(client).to receive(:get).with("/api/build/angrychef/12.0.0").and_return("uri" => "http://artifactory.chef.co/api/build/angrychef/12.0.0", "buildInfo" => { "name" => "angrychef", "number" => "12.0.0" })
+      allow(client).to receive(:get).with("/api/build/angrychef/12.0.0").and_return(
+        "uri" => "http://artifactory.chef.co/api/build/angrychef/12.0.0",
+        "buildInfo" => {
+          "name" => "angrychef",
+          "number" => "12.0.0",
+          "modules" => [
+            {
+              "id" => "com.getchef:angrychef:12.0.0",
+              "artifacts" => [
+                {
+                  "type" => "deb",
+                  "sha1" => "a0556384539dfdbc8b3097427a3c1050cfb758b0",
+                  "md5" => "a66b798c29c946975dcdc8ff0a196f88",
+                  "name" => "angrychef_12.0.0-1_amd64.deb",
+                },
+              ],
+            },
+          ],
+        }
+      )
+      allow(client).to receive(:get).with("/api/search/checksum", md5: "a66b798c29c946975dcdc8ff0a196f88").and_return(
+        {
+          "results" => [
+            {
+              "uri" => "http://artifactory.chef.co/api/storage/omnibus-current-local/com/getchef/angrychef/12.0.0/ubuntu/14.04/angrychef_12.0.0-1_amd64.deb",
+            },
+          ],
+        }
+      )
+      allow(client).to receive(:get).with("http://artifactory.chef.co/api/storage/omnibus-current-local/com/getchef/angrychef/12.0.0/ubuntu/14.04/angrychef_12.0.0-1_amd64.deb").and_return(
+        {
+          "repo" => "omnibus-current-local",
+        }
+      )
+
       allow(client).to receive(:post).with("/api/plugins/build/promote/stable/angrychef/12.0.0?params=comment=Promoted%20using%20the%20lita-artifactory%20plugin.%20ChatOps%20FTW!%7Cuser=Test%20User%20(1%20/%20Test%20User)", any_args).and_return("messages" => [])
     end
 
@@ -74,6 +108,27 @@ Please verify *poop* is a valid project name and *33* is a valid version number.
         expect(client).to receive(:post).with(%r{(.*)?user=Some%20User%20With%20A%20Really%20Long%20Name%20\(Uxxxxxxxx%20\/%20someuserwithareal(.*)?}, any_args)
 
         send_command("artifactory promote angrychef 12.0.0")
+      end
+    end
+
+    context "the artifacts do not exist in the current channel" do
+      before do
+        allow(client).to receive(:get).with("http://artifactory.chef.co/api/storage/omnibus-current-local/com/getchef/angrychef/12.0.0/ubuntu/14.04/angrychef_12.0.0-1_amd64.deb").and_return(
+          {
+            "repo" => "omnibus-unstable-local",
+          }
+        )
+      end
+
+      it "prints a nice message" do
+        send_command("artifactory promote angrychef 12.0.0")
+
+        success_response = <<-EOH
+:hankey: *angrychef* *12.0.0* does not exist in the _current_ channel.
+
+The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ because it did not pass the required testing gates in its pipeline.
+        EOH
+        expect(replies.first).to eq(success_response)
       end
     end
   end
