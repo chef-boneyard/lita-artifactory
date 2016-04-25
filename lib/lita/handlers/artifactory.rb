@@ -4,7 +4,7 @@ module Lita
       config :username, required: true
       config :password, required: true
       config :endpoint, required: true
-      config :base_path, default: 'com/getchef'
+      config :base_path, default: "com/getchef"
       config :ssl_pem_file, default: nil
       config :ssl_verify, default: nil
       config :proxy_username, default: nil
@@ -14,14 +14,14 @@ module Lita
 
       PROJECT_REGEX     = /[\w\-\.\+\_]+/
       VERSION_REGEX     = /[\w\-\.\+\_]+/
-      PROMOTION_CHANNEL = 'stable'
+      PROMOTION_CHANNEL = "stable"
 
       route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
-              'artifactory promote' => 'promote <artifact> <version>',
+              "artifactory promote" => "promote <artifact> <version>",
             })
 
       route(/^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
-              'artifactory repos' => 'list artifact repositories',
+              "artifactory repos" => "list artifact repositories",
             })
 
       def promote(response)
@@ -31,7 +31,7 @@ module Lita
         user          = response.user
 
         promotion_options = {
-          comment: 'Promoted using the lita-artifactory plugin. ChatOps FTW!',
+          comment: "Promoted using the lita-artifactory plugin. ChatOps FTW!",
           # user is limited to 64 characters
           user: "#{user.name} (#{user.id} / #{user.mention_name})"[0..63],
         }
@@ -40,7 +40,7 @@ module Lita
         build = ::Artifactory::Resource::Build.find(project, version, client: client)
 
         if build.nil?
-          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+          reply_msg = <<-EOH.gsub(/^ {12}/, "")
             :hankey: I couldn't locate a build for *#{project}* *#{version}*.
 
             Please verify *#{project}* is a valid project name and *#{version}* is a valid version number.
@@ -54,21 +54,21 @@ module Lita
         #
         #   params=<PARAM1_NAME>=<PARAM1_VALUE>|<PARAM2_NAME>=<PARAM2_VALUE>
         #
-        params = promotion_options.map { |k, v| "#{k}=#{v}" }.join('|')
-        path   = ['/api/plugins/build/promote', PROMOTION_CHANNEL, build.name, build.number].join('/')
-        path   = [path, "params=#{params}"].compact.join('?')
+        params = promotion_options.map { |k, v| "#{k}=#{v}" }.join("|")
+        path   = ["/api/plugins/build/promote", PROMOTION_CHANNEL, build.name, build.number].join("/")
+        path   = [path, "params=#{params}"].compact.join("?")
 
         begin
           client.post(URI.encode(path), nil)
 
-          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+          reply_msg = <<-EOH.gsub(/^ {12}/, "")
             :metal: :ice_cream: *#{project}* *#{version}* has been successfully promoted to the *#{PROMOTION_CHANNEL}* channel!
 
             You can view the promoted artifacts at:
             #{config.endpoint}/webapp/browserepo.html?pathId=omnibus-#{PROMOTION_CHANNEL}-local:#{artifact_path}
           EOH
         rescue ::Artifactory::Error::HTTPError => e
-          reply_msg = <<-EOH.gsub(/^ {12}/, '')
+          reply_msg = <<-EOH.gsub(/^ {12}/, "")
             :scream: :skull: There was an error promoting *#{project}* *#{version}* to the *#{PROMOTION_CHANNEL}* channel!
 
             Full error message from #{config.endpoint}:
@@ -96,7 +96,7 @@ module Lita
           proxy_username: config.proxy_username,
           proxy_password: config.proxy_password,
           proxy_address:  config.proxy_address,
-          proxy_port:     config.proxy_port,
+          proxy_port:     config.proxy_port
         )
       end
 
