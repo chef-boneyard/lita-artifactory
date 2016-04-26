@@ -50,6 +50,18 @@ module Lita
           return
         end
 
+        # Validate the artifacts all exist in `omnibus-current-local`
+        unless repos_for(build).all? { |r| r == "omnibus-current-local" }
+          reply_msg = <<-EOH.gsub(/^ {12}/, "")
+            :hankey: *#{project}* *#{version}* does not exist in the _current_ channel.
+
+            The *#{project}* *#{version}* build was not promoted to _current_ from _unstable_ because it did not pass the required testing gates in its pipeline.
+          EOH
+          response.reply reply_msg
+
+          return
+        end
+
         # Artifactory expects parameters in the form:
         #
         #   params=<PARAM1_NAME>=<PARAM1_VALUE>|<PARAM2_NAME>=<PARAM2_VALUE>
@@ -102,6 +114,25 @@ module Lita
 
       def all_repos
         ::Artifactory::Resource::Repository.all(client: client)
+      end
+
+      def repos_for(build)
+        repos = []
+
+        # Multiple artifact paths may be the same underlying artifact,
+        # this is Artifactory's de-duping in action.
+        uniq_md5s = build.modules.first["artifacts"].map { |a| a["md5"] }.uniq
+
+        uniq_md5s.each do |md5|
+          ::Artifactory::Resource::Artifact.checksum_search(
+            md5: md5,
+            client: client
+          ).each do |a|
+            repos << a.repo
+          end
+        end
+
+        repos.uniq
       end
     end
 
