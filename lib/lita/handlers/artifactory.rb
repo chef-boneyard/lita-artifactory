@@ -12,17 +12,39 @@ module Lita
       config :proxy_address, default: nil
       config :proxy_port, default: nil
 
+      GEM_REGEX         = /[\w\-\.\+\_]+/
       PROJECT_REGEX     = /[\w\-\.\+\_]+/
       VERSION_REGEX     = /[\w\-\.\+\_]+/
       PROMOTION_CHANNEL = "stable"
 
-      route(/^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i, :promote, command: true, help: {
+      route(
+        /^artifact(?:ory)?\s+promote\s+#{PROJECT_REGEX.source}\s+#{VERSION_REGEX.source}/i,
+        :promote,
+        command: true,
+        restrict_to: [:artifactory_promoters],
+        help: {
               "artifactory promote" => "promote <artifact> <version>",
-            })
+              }
+            )
 
-      route(/^artifact(?:ory)?\s+repos(?:itories)?/i, :repos, command: true, help: {
+      route(
+        /^artifact(?:ory)?\s+repos(?:itories)?/i,
+        :repos,
+        command: true,
+        help: {
               "artifactory repos" => "list artifact repositories",
-            })
+              }
+            )
+
+      route(
+        /^artifact(?:ory)?\s+gem\s+push\s+#{GEM_REGEX.source}\s+#{VERSION_REGEX.source}/i,
+        :push,
+        command: true,
+        restrict_to: [:artifactory_promoters],
+        help: {
+              "artifactory gem push" => "push <gem> <version>",
+              }
+            )
 
       def promote(response)
         project       = response.args[1]
@@ -92,6 +114,42 @@ module Lita
         response.reply reply_msg
       end
 
+      def push(response)
+        ruby_gem      = response.args[2]
+        version       = response.args[3]
+        human_name    = "#{ruby_gem} gem version #{version}"
+        gem_source    = "#{config.endpoint}/api/gems/gems-local/"
+        missing_gem   = false
+
+        Dir.mktmpdir do |dir|
+          Dir.chdir(dir) do
+            %w{ruby universal-mingw32}.each do |platform|
+              cmd = Mixlib::ShellOut.new(fetch_command_for_platform(platform, ruby_gem, version, gem_source))
+              cmd.run_command
+              begin
+                cmd.error!
+              rescue Mixlib::ShellOut::ShellCommandFailed => e
+                response.reply(":warning: :warning: There were errors retrieving the #{human_name} from #{gem_source}! :warning: :warning:\n#{e}")
+                missing_gem = true
+              end
+            end
+
+            break if missing_gem
+
+            Dir.glob("*.gem") do |gem_file|
+              cmd = Mixlib::ShellOut.new("gem push #{gem_file} --key chef_rubygems_api_key")
+              cmd.run_command
+              begin
+                cmd.error!
+                response.reply(":rockon: Succesfully pushed #{human_name} to rubygems! :rockon:")
+              rescue Mixlib::ShellOut::ShellCommandFailed => e
+                response.reply(":warning: :warning: Failed pushing #{human_name} to rubygems! :warning: :warning:\n#{e}")
+              end
+            end
+          end
+        end
+      end
+
       def repos(response)
         response.reply "Artifact repositories: #{all_repos.collect(&:key).sort.join(', ')}"
       end
@@ -133,6 +191,20 @@ module Lita
         end
 
         repos.uniq
+      end
+
+      def fetch_command_for_platform(platform, gem_name, version, source)
+        [
+          "gem fetch",
+          gem_name,
+          "--version",
+          version,
+          "--platform",
+          platform,
+          "--clear-sources",
+          "--source",
+          source,
+        ].join(" ")
       end
     end
 

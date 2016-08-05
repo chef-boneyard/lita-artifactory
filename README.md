@@ -43,6 +43,8 @@ config.handlers.artifactory.proxy_port
 ````
 artifactory promote <artifact> <version>
 
+artifactory gem push <gem_name> <version>
+
 artifactory repos # list all the artifact repositories under the base path
 ````
 ## Local Testing With the Shell Adapter
