@@ -7,3 +7,5 @@ Lita.load_locales Dir[File.expand_path(
 require "lita/handlers/artifactory"
 
 require "artifactory"
+
+require "mixlib/shellout"

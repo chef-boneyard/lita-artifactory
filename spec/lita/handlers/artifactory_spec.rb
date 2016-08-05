@@ -1,8 +1,31 @@
 require "spec_helper"
 
+class FakeShellout
+  def initialize
+    @commands = []
+    @times_called = 0
+  end
+
+  attr_accessor :commands
+  attr_accessor :has_error
+  attr_reader :times_called
+
+  def error!
+    raise Mixlib::ShellOut::ShellCommandFailed.new if has_error
+  end
+
+  def run_command
+    @times_called += 1
+    if commands.last.start_with?("gem fetch")
+      File.open("gem#{@times_called}.gem", "w") {}
+    end
+  end
+end
+
 describe Lita::Handlers::Artifactory, lita_handler: true do
   let(:endpoint) { "http://artifactory.chef.fake" }
   let(:client) { double("Artifactory::Client") }
+  let(:user_group) { :artifactory_promoters }
 
   before do
     allow(subject).to receive(:client).and_return(client)
@@ -13,10 +36,12 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
   end
 
   it { is_expected.to route_command("artifactory repositories").to(:repos) }
-  it { is_expected.to route_command("artifactory promote thing 12.0.0 from here to there").to(:promote) }
+  it { is_expected.to route_command("artifactory promote thing 12.0.0 from here to there").with_authorization_for(user_group).to(:promote) }
+  it { is_expected.to route_command("artifactory gem push thing 12.0.0").with_authorization_for(user_group).to(:push) }
 
   describe '#artifactory promote' do
     before do
+      allow_any_instance_of(Lita::Authorization).to receive(:user_in_group?).with(anything, user_group).and_return(true)
       allow(client).to receive(:get).with("/api/build/angrychef/12.0.0").and_return(
         "uri" => "http://artifactory.chef.fake/api/build/angrychef/12.0.0",
         "buildInfo" => {
@@ -148,6 +173,51 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     it "returns a comma-separeted list of repo names" do
       send_command("artifactory repositories")
       expect(replies.last).to eq("Artifact repositories: repo1, repo2")
+    end
+  end
+
+  describe '#artifactory gem push' do
+    let(:gem_name)    { "my_gem" }
+    let(:gem_version) { "1.2.3" }
+    let(:shellout)    { FakeShellout.new }
+
+    before do
+      allow_any_instance_of(Lita::Authorization).to receive(:user_in_group?).with(anything, user_group).and_return(true)
+      allow(Mixlib::ShellOut).to receive(:new) do |cmd|
+        shellout.commands << cmd
+      end.and_return(shellout)
+    end
+
+    it "fetches ruby platform" do
+      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      expect(shellout.commands).to include "gem fetch #{gem_name} --version #{gem_version} --platform ruby --clear-sources --source #{endpoint}/api/gems/gems-local/"
+    end
+
+    it "fetches mingw platform" do
+      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      expect(shellout.commands).to include "gem fetch #{gem_name} --version #{gem_version} --platform universal-mingw32 --clear-sources --source #{endpoint}/api/gems/gems-local/"
+    end
+
+    it "pushes both gems to rubygems" do
+      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      expect(shellout.commands).to include "gem push gem1.gem --key chef_rubygems_api_key"
+      expect(shellout.commands).to include "gem push gem2.gem --key chef_rubygems_api_key"
+    end
+
+    it "pushes ONLY both gems to rubygems" do
+      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      expect(shellout.times_called).to eq 4
+    end
+
+    context "fail to fetch a gem" do
+      before do
+        shellout.has_error = true
+      end
+
+      it "does not push anything to rubygems" do
+        send_command("artifactory gem push #{gem_name} #{gem_version}")
+        expect(shellout.commands).not_to include "gem push gem.gem --key chef_rubygems_api_key"
+      end
     end
   end
 end
