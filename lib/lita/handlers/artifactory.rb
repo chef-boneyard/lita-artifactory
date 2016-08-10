@@ -126,12 +126,12 @@ module Lita
             %w{ruby universal-mingw32}.each do |platform|
               cmd = Mixlib::ShellOut.new(fetch_command_for_platform(platform, ruby_gem, version, gem_source))
               cmd.run_command
-              begin
-                cmd.error!
-              rescue Mixlib::ShellOut::ShellCommandFailed => e
-                response.reply(":warning: :warning: There were errors retrieving the #{human_name} from #{gem_source}! :warning: :warning:\n#{e}")
+              unless cmd.stderr.empty?
+                response.reply(":warning: :warning: There were errors retrieving the #{human_name} from #{gem_source}! :warning: :warning:\n#{cmd.stderr}")
                 missing_gem = true
+                break
               end
+              response.reply cmd.stdout
             end
 
             break if missing_gem

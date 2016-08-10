@@ -4,14 +4,16 @@ class FakeShellout
   def initialize
     @commands = []
     @times_called = 0
+    @stderr = ""
   end
 
   attr_accessor :commands
-  attr_accessor :has_error
+  attr_accessor :stderr
   attr_reader :times_called
+  attr_reader :stdout
 
   def error!
-    raise Mixlib::ShellOut::ShellCommandFailed.new if has_error
+    raise Mixlib::ShellOut::ShellCommandFailed.new unless stderr.empty?
   end
 
   def run_command
@@ -211,7 +213,7 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
 
     context "fail to fetch a gem" do
       before do
-        shellout.has_error = true
+        shellout.stderr = "there was an error"
       end
 
       it "does not push anything to rubygems" do
