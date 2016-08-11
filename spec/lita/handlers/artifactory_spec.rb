@@ -24,16 +24,35 @@ class FakeShellout
   end
 end
 
+shared_examples "an authorization failure" do
+  it "includes user name in the failure message" do
+    send_command("#{command} angrychef 12.0.0")
+    expect(replies.first).to include(user.name)
+  end
+
+  it "includes restricted group name in the failure message" do
+    send_command("#{command} angrychef 12.0.0")
+    expect(replies.first).to include(user_group.to_s)
+  end
+
+  it "includes command in the failure message" do
+    send_command("#{command} angrychef 12.0.0")
+    expect(replies.first).to include(command)
+  end
+end
+
 describe Lita::Handlers::Artifactory, lita_handler: true do
   let(:endpoint) { "http://artifactory.chef.fake" }
   let(:client) { double("Artifactory::Client") }
   let(:user_group) { :artifactory_promoters }
+  let(:valid_user) { true }
 
   before do
     allow(subject).to receive(:client).and_return(client)
     allow(client).to receive(:endpoint).and_return(endpoint)
     # We have to explicitly call this now, see https://github.com/litaio/lita/issues/142
     allow(described_class).to receive(:new).and_return(subject)
+    allow_any_instance_of(Lita::Authorization).to receive(:user_in_group?).with(anything, user_group).and_return(valid_user)
     Lita.config.handlers.artifactory.endpoint = endpoint
   end
 
@@ -42,8 +61,9 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
   it { is_expected.to route_command("artifactory gem push thing 12.0.0").with_authorization_for(user_group).to(:push) }
 
   describe '#artifactory promote' do
+    let(:command) { "artifactory promote" }
+
     before do
-      allow_any_instance_of(Lita::Authorization).to receive(:user_in_group?).with(anything, user_group).and_return(true)
       allow(client).to receive(:get).with("/api/build/angrychef/12.0.0").and_return(
         "uri" => "http://artifactory.chef.fake/api/build/angrychef/12.0.0",
         "buildInfo" => {
@@ -83,7 +103,7 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
     end
 
     it "promotes an artifact" do
-      send_command("artifactory promote angrychef 12.0.0")
+      send_command("#{command} angrychef 12.0.0")
 
       success_response = <<-EOH
 :metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to the *stable* channel!
@@ -102,7 +122,7 @@ http://artifactory.chef.fake/webapp/browserepo.html?pathId=omnibus-stable-local:
       end
 
       it "prints a failure message" do
-        send_command("artifactory promote angrychef 12.0.0")
+        send_command("#{command} angrychef 12.0.0")
 
         error_response = <<-EOH
 :scream: :skull: There was an error promoting *angrychef* *12.0.0* to the *stable* channel!
@@ -121,7 +141,7 @@ Full error message from http://artifactory.chef.fake:
       end
 
       it "prints a nice message" do
-        send_command("artifactory promote poop 33")
+        send_command("#{command} poop 33")
 
         success_response = <<-EOH
 :hankey: I couldn't locate a build for *poop* *33*.
@@ -138,7 +158,7 @@ Please verify *poop* is a valid project name and *33* is a valid version number.
       it "truncates the user data to 66 characters" do
         expect(client).to receive(:post).with(%r{(.*)?user=Some%20User%20With%20A%20Really%20Long%20Name%20\(Uxxxxxxxx%20\/%20someuserwithareal(.*)?}, any_args)
 
-        send_command("artifactory promote angrychef 12.0.0")
+        send_command("#{command} angrychef 12.0.0")
       end
     end
 
@@ -152,7 +172,7 @@ Please verify *poop* is a valid project name and *33* is a valid version number.
       end
 
       it "prints a nice message" do
-        send_command("artifactory promote angrychef 12.0.0")
+        send_command("#{command} angrychef 12.0.0")
 
         success_response = <<-EOH
 :hankey: *angrychef* *12.0.0* does not exist in the _current_ channel.
@@ -161,6 +181,12 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
         EOH
         expect(replies.first).to eq(success_response)
       end
+    end
+
+    context "user is not in restricted group" do
+      let(:valid_user) { false }
+
+      it_behaves_like "an authorization failure"
     end
   end
 
@@ -182,32 +208,32 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     let(:gem_name)    { "my_gem" }
     let(:gem_version) { "1.2.3" }
     let(:shellout)    { FakeShellout.new }
+    let(:command)     { "artifactory gem push" }
 
     before do
-      allow_any_instance_of(Lita::Authorization).to receive(:user_in_group?).with(anything, user_group).and_return(true)
       allow(Mixlib::ShellOut).to receive(:new) do |cmd|
         shellout.commands << cmd
       end.and_return(shellout)
     end
 
     it "fetches ruby platform" do
-      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      send_command("#{command} #{gem_name} #{gem_version}")
       expect(shellout.commands).to include "gem fetch #{gem_name} --version #{gem_version} --platform ruby --clear-sources --source #{endpoint}/api/gems/gems-local/"
     end
 
     it "fetches mingw platform" do
-      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      send_command("#{command} #{gem_name} #{gem_version}")
       expect(shellout.commands).to include "gem fetch #{gem_name} --version #{gem_version} --platform universal-mingw32 --clear-sources --source #{endpoint}/api/gems/gems-local/"
     end
 
     it "pushes both gems to rubygems" do
-      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      send_command("#{command} #{gem_name} #{gem_version}")
       expect(shellout.commands).to include "gem push gem1.gem --key chef_rubygems_api_key"
       expect(shellout.commands).to include "gem push gem2.gem --key chef_rubygems_api_key"
     end
 
     it "pushes ONLY both gems to rubygems" do
-      send_command("artifactory gem push #{gem_name} #{gem_version}")
+      send_command("#{command} #{gem_name} #{gem_version}")
       expect(shellout.times_called).to eq 4
     end
 
@@ -217,9 +243,15 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
       end
 
       it "does not push anything to rubygems" do
-        send_command("artifactory gem push #{gem_name} #{gem_version}")
+        send_command("#{command} #{gem_name} #{gem_version}")
         expect(shellout.commands).not_to include "gem push gem.gem --key chef_rubygems_api_key"
       end
+    end
+
+    context "user is not in restricted group" do
+      let(:valid_user) { false }
+
+      it_behaves_like "an authorization failure"
     end
   end
 end
