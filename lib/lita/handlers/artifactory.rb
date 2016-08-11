@@ -46,6 +46,21 @@ module Lita
               }
             )
 
+      on :route_authorization_failed, :warn_authorization_failure
+
+      def warn_authorization_failure(payload)
+        robot.send_message(
+          payload[:message].source,
+          [
+            payload[:message].user.name,
+            ": You must be a member of one of these groups:\n\t",
+            payload[:route].required_groups,
+            "\nbefore calling '#{payload[:message].body}'.",
+            "\nPlease ask #eng-services-support to add you.",
+          ].join
+        )
+      end
+
       def promote(response)
         project       = response.args[1]
         version       = response.args[2]
