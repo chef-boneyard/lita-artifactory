@@ -141,9 +141,9 @@ module Lita
               cmd.run_command
               begin
                 cmd.error!
-                response.reply(":rockon: Succesfully pushed #{human_name} to rubygems! :rockon:")
+                response.reply(":rockon: Succesfully pushed #{gem_file} to rubygems! :rockon:")
               rescue Mixlib::ShellOut::ShellCommandFailed => e
-                response.reply(":warning: :warning: Failed pushing #{human_name} to rubygems! :warning: :warning:\n#{e}")
+                response.reply(":warning: :warning: Failed pushing #{gem_file} to rubygems! :warning: :warning:\n#{e}")
               end
             end
           end
