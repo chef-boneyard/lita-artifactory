@@ -109,7 +109,7 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
 :metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to the *stable* channel!
 
 You can view the promoted artifacts at:
-http://artifactory.chef.fake/webapp/browserepo.html?pathId=omnibus-stable-local:com/getchef/angrychef/12.0.0
+http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stable-local/com/getchef/angrychef/12.0.0
       EOH
       expect(replies.first).to eq(success_response)
     end
