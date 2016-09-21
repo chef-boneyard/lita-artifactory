@@ -46,6 +46,16 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
   let(:client) { double("Artifactory::Client") }
   let(:user_group) { :artifactory_promoters }
   let(:valid_user) { true }
+  let(:repo) { "omnibus-current-local" }
+
+  let(:success_response) do
+    <<-EOH
+:metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to the *stable* channel!
+
+You can view the promoted artifacts at:
+http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stable-local/com/getchef/angrychef/12.0.0
+      EOH
+  end
 
   before do
     allow(subject).to receive(:client).and_return(client)
@@ -95,23 +105,28 @@ describe Lita::Handlers::Artifactory, lita_handler: true do
       )
       allow(client).to receive(:get).with("/api/storage/omnibus-current-local/com/getchef/angrychef/12.0.0/ubuntu/14.04/angrychef_12.0.0-1_amd64.deb").and_return(
         {
-          "repo" => "omnibus-current-local",
+          "repo" => repo,
         }
       )
 
       allow(client).to receive(:post).with("/api/plugins/build/promote/stable/angrychef/12.0.0?params=comment=Promoted%20using%20the%20lita-artifactory%20plugin.%20ChatOps%20FTW!%7Cuser=Test%20User%20(1%20/%20Test%20User)", any_args).and_return("messages" => [])
     end
 
-    it "promotes an artifact" do
-      send_command("#{command} angrychef 12.0.0")
+    %w{
+      omnibus-current-local
+      current-apt-local
+      current-yum-local
+      current-migation-local
+    }.each do |alternate_current_repo|
+      context "artifacts exist in #{alternate_current_repo}" do
+        let(:repo) { alternate_current_repo }
 
-      success_response = <<-EOH
-:metal: :ice_cream: *angrychef* *12.0.0* has been successfully promoted to the *stable* channel!
+        it "promotes an artifact" do
+          send_command("#{command} angrychef 12.0.0")
 
-You can view the promoted artifacts at:
-http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stable-local/com/getchef/angrychef/12.0.0
-      EOH
-      expect(replies.first).to eq(success_response)
+          expect(replies.first).to eq(success_response)
+        end
+      end
     end
 
     context "the promotion fails" do
