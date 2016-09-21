@@ -114,7 +114,7 @@ module Lita
             :metal: :ice_cream: *#{project}* *#{version}* has been successfully promoted to the *#{PROMOTION_CHANNEL}* channel!
 
             You can view the promoted artifacts at:
-            #{config.endpoint}/webapp/browserepo.html?pathId=omnibus-#{PROMOTION_CHANNEL}-local:#{artifact_path}
+            #{config.endpoint}/webapp/#/artifacts/browse/tree/General/omnibus-#{PROMOTION_CHANNEL}-local/#{artifact_path}
           EOH
         rescue ::Artifactory::Error::HTTPError => e
           reply_msg = <<-EOH.gsub(/^ {12}/, "")
