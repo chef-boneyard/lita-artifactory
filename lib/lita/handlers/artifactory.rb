@@ -87,8 +87,8 @@ module Lita
           return
         end
 
-        # Validate the artifacts all exist in `omnibus-current-local`
-        unless repos_for(build).all? { |r| r == "omnibus-current-local" }
+        # Validate the artifacts only exist in the current channel
+        unless repos_for(build).all? { |r| r =~ /current/ }
           reply_msg = <<-EOH.gsub(/^ {12}/, "")
             :hankey: *#{project}* *#{version}* does not exist in the _current_ channel.
 

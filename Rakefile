@@ -4,6 +4,10 @@ require "rspec/core/rake_task"
 require "rubocop/rake_task"
 
 RSpec::Core::RakeTask.new
-RuboCop::RakeTask.new
 
-task default: [:spec, :rubocop]
+desc " Run ChefStyle"
+RuboCop::RakeTask.new(:chefstyle) do |task|
+  task.options << "--display-cop-names"
+end
+
+task default: [:spec, :chefstyle]
