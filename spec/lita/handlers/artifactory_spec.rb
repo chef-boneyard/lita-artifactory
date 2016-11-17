@@ -112,6 +112,12 @@ http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stab
       allow(client).to receive(:post).with("/api/plugins/build/promote/stable/angrychef/12.0.0?params=comment=Promoted%20using%20the%20lita-artifactory%20plugin.%20ChatOps%20FTW!%7Cuser=Test%20User%20(1%20/%20Test%20User)", any_args).and_return("messages" => [])
     end
 
+    it "notifies dockerbus to promote Docker image (if one exists)" do
+      allow(robot).to receive(:trigger).and_call_original
+      expect(robot).to receive(:trigger).with(:dockerbus_promote, product: "angrychef", version: "12.0.0")
+      send_command("#{command} angrychef 12.0.0")
+    end
+
     %w{
       omnibus-current-local
       current-apt-local
