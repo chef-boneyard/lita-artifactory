@@ -70,7 +70,7 @@ http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stab
   it { is_expected.to route_command("artifactory promote thing 12.0.0 from here to there").with_authorization_for(user_group).to(:promote) }
   it { is_expected.to route_command("artifactory gem push thing 12.0.0").with_authorization_for(user_group).to(:push) }
 
-  describe '#artifactory promote' do
+  describe "#artifactory promote" do
     let(:command) { "artifactory promote" }
 
     before do
@@ -211,7 +211,7 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     end
   end
 
-  describe '#artifactory repositories' do
+  describe "#artifactory repositories" do
     let(:artifact1) { double("Artifactory::Resource::Artifact", key: "repo1") }
     let(:artifact2) { double("Artifactory::Resource::Artifact", key: "repo2") }
 
@@ -225,7 +225,7 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     end
   end
 
-  describe '#artifactory gem push' do
+  describe "#artifactory gem push" do
     let(:gem_name)    { "my_gem" }
     let(:gem_version) { "1.2.3" }
     let(:shellout)    { FakeShellout.new }
