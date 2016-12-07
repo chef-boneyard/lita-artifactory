@@ -126,6 +126,8 @@ module Lita
           EOH
         end
 
+        robot.trigger(:dockerbus_promote, product: project, version: version)
+
         response.reply reply_msg
       end
 

@@ -70,7 +70,7 @@ http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stab
   it { is_expected.to route_command("artifactory promote thing 12.0.0 from here to there").with_authorization_for(user_group).to(:promote) }
   it { is_expected.to route_command("artifactory gem push thing 12.0.0").with_authorization_for(user_group).to(:push) }
 
-  describe '#artifactory promote' do
+  describe "#artifactory promote" do
     let(:command) { "artifactory promote" }
 
     before do
@@ -110,6 +110,12 @@ http://artifactory.chef.fake/webapp/#/artifacts/browse/tree/General/omnibus-stab
       )
 
       allow(client).to receive(:post).with("/api/plugins/build/promote/stable/angrychef/12.0.0?params=comment=Promoted%20using%20the%20lita-artifactory%20plugin.%20ChatOps%20FTW!%7Cuser=Test%20User%20(1%20/%20Test%20User)", any_args).and_return("messages" => [])
+    end
+
+    it "notifies dockerbus to promote Docker image (if one exists)" do
+      allow(robot).to receive(:trigger).and_call_original
+      expect(robot).to receive(:trigger).with(:dockerbus_promote, product: "angrychef", version: "12.0.0")
+      send_command("#{command} angrychef 12.0.0")
     end
 
     %w{
@@ -205,7 +211,7 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     end
   end
 
-  describe '#artifactory repositories' do
+  describe "#artifactory repositories" do
     let(:artifact1) { double("Artifactory::Resource::Artifact", key: "repo1") }
     let(:artifact2) { double("Artifactory::Resource::Artifact", key: "repo2") }
 
@@ -219,7 +225,7 @@ The *angrychef* *12.0.0* build was not promoted to _current_ from _unstable_ bec
     end
   end
 
-  describe '#artifactory gem push' do
+  describe "#artifactory gem push" do
     let(:gem_name)    { "my_gem" }
     let(:gem_version) { "1.2.3" }
     let(:shellout)    { FakeShellout.new }
