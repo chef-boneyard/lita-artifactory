@@ -47,6 +47,14 @@ artifactory gem push <gem_name> <version>
 
 artifactory repos # list all the artifact repositories under the base path
 ````
+
+## Consuming the `artifactory_artifact_promoted` event
+When an artifact is successfully promoted from the *current* to *stable* channel,
+a `artifactory_artifact_promoted` event is published. If you wish to trigger
+behavior in your Lita plugin when certain projects are promoted, you can
+write an [event route](https://docs.lita.io/plugin-authoring/handlers/#event-routes)
+that will listen for that event.
+
 ## Local Testing With the Shell Adapter
 ### Install redis
 ````

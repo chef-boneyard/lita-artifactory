@@ -126,6 +126,11 @@ module Lita
           EOH
         end
 
+        # This event allows other lita utilities to act when projects are promoted.
+        robot.trigger(:artifactory_artifact_promoted, product: project, version: version, target_channel: PROMOTION_CHANNEL, source_channel: source_channel(PROMOTION_CHANNEL))
+
+        # The dockerbus promote should probably be deprecated when lita-dockerbus
+        # is modified to trigger based off the generic artifactory_promote.
         robot.trigger(:dockerbus_promote, product: project, version: version)
 
         response.reply reply_msg
@@ -172,6 +177,14 @@ module Lita
       end
 
       private
+
+      def source_channel(target_channel)
+        case target_channel
+        when "current"; "unstable"
+        when "stable"; "current"
+        else raise "Source channel is not known for target channel: #{target_channel}"
+        end
+      end
 
       def client
         @client ||= ::Artifactory::Client.new(
